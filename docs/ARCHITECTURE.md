@@ -1,6 +1,6 @@
 # Arquitetura do Farol Financeiro
 
-Este documento apresenta a arquitetura técnica do código 1.4.6 do Farol Financeiro. Ele descreve os componentes, as responsabilidades de cada módulo e os fluxos que exigem mais cuidado ao evoluir o sistema.
+Este documento apresenta a arquitetura técnica do código 1.4.7 do Farol Financeiro. Ele descreve os componentes, as responsabilidades de cada módulo e os fluxos que exigem mais cuidado ao evoluir o sistema.
 
 ## Visão geral
 
@@ -139,7 +139,9 @@ flowchart LR
     S -->|Confirmação| T[(Carteira e transações)]
 ```
 
-Comprovantes PDF, JPG e PNG seguem um fluxo próprio. A associação automática deve ser tratada como sugestão quando houver ambiguidade, nunca como prova contábil definitiva.
+Comprovantes PDF, JPG e PNG seguem um fluxo próprio. A associação automática deve ser tratada como sugestão quando houver ambiguidade, nunca como prova contábil definitiva. Na substituição, o novo arquivo é validado e persistido antes de atualizar os metadados da transação; o arquivo anterior só é removido após a confirmação do banco. Falhas preservam o comprovante anterior e são registradas nos logs do backend sem expor dados do arquivo na resposta ao usuário.
+
+Os formulários de lançamento e as ações de investimento bloqueiam envios repetidos na interface enquanto a operação está em andamento, incluindo uma trava síncrona para cliques rápidos. Essa proteção é do cliente e não constitui uma garantia de idempotência para chamadas diretas à API.
 
 O parser SINACOR de nota B3 em PDF é uma entrada experimental de staging, controlada por `APP_INVESTMENTS_IMPORTS_PDF_ENABLED`. Ele aceita apenas PDF nativo com texto selecionável, produz uma prévia editável e nunca cria lançamento sem confirmação; OCR, documentos escaneados e layouts não validados continuam fora do suporte.
 

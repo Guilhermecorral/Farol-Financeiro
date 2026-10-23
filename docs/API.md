@@ -1,6 +1,6 @@
 # Referência da API
 
-Esta referência resume a API REST do código 1.4.6. O contrato executável completo pode ser consultado pelo Swagger UI no ambiente de desenvolvimento.
+Esta referência resume a API REST do código 1.4.7. O contrato executável completo pode ser consultado pelo Swagger UI no ambiente de desenvolvimento.
 
 ## Acesso
 
@@ -87,7 +87,7 @@ Respostas comuns:
 | `GET` | `/api/monthly-analysis?year=2026&month=9` | Retorna a análise mensal consolidada |
 
 `year` e `month` são obrigatórios na análise mensal. No dashboard, ambos são opcionais.
-O endpoint de análise mensal retorna totais, categorias, destaques e comparações do período; não inclui mais sugestões ou dicas financeiras.
+O endpoint de análise mensal retorna totais, categorias, destaques e comparações do período; não inclui sugestões ou dicas financeiras. Na interface, os formulários de lançamento único e as operações de investimento bloqueiam envios repetidos enquanto uma gravação está em andamento. Essa proteção de interface não substitui controle de duplicidade para integrações que chamem a API diretamente.
 
 ## Transações e comprovantes
 
@@ -107,6 +107,7 @@ O endpoint de análise mensal retorna totais, categorias, destaques e comparaç�
 
 Uploads usam `multipart/form-data`. O campo do extrato é `file`, o campo do anexo individual é `file` e a análise em lote usa `files`.
 Comprovantes individuais aceitam PDF, JPG ou PNG de até 10 MB. O arquivo é gravado no diretório configurado no backend e associado à transação somente após a validação do conteúdo; ao substituir um anexo, o anterior é removido depois que a atualização do banco é confirmada.
+Falhas de armazenamento são registradas nos logs do backend com a causa técnica, sem retornar detalhes internos ou conteúdo do arquivo ao usuário. Se a gravação ou a atualização falhar durante a substituição, o comprovante válido anterior é mantido.
 
 ## Investimentos
 

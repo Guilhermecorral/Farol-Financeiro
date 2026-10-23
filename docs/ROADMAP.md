@@ -1,10 +1,10 @@
 # Roadmap do Produto
 
-Atualizado em 12/09/2026. Este documento e a referencia de continuidade para as proximas evolucoes do Farol Financeiro. Ele registra o que ja foi decidido, o que precisa ser validado e os criterios para considerar cada entrega pronta.
+Atualizado em 23/10/2026. Este documento e a referencia de continuidade para as proximas evolucoes do Farol Financeiro. Ele registra o que ja foi decidido, o que precisa ser validado e os criterios para considerar cada entrega pronta.
 
 ## Onde estamos agora
 
-- Versao do codigo: `1.4.6` - Central de Tributos da Pessoa Fisica implementada; homologacao em ambiente real pendente.
+- Versao do codigo: `1.4.7` - correcoes de estabilidade e refinamentos da Lista de Desejos entregues; homologacao da Central de Tributos PF em ambiente real continua pendente.
 - Ultima versao homologada em producao: `1.4.5`.
 
 | Frente | Estado | Situacao atual |
@@ -17,6 +17,17 @@ Atualizado em 12/09/2026. Este documento e a referencia de continuidade para as 
 | COTAHIST | Bloqueado por decisao | Arquivos locais estao ignorados pelo Git e inventariados por hash. Importacao e atualizacao anual ainda nao foram implementadas. |
 | Homologacao | Entregue | Admin pode zerar o dominio financeiro de uma conta com confirmacao reforcada, preservando usuario, acesso e 2FA. |
 | Refinamentos 1.4.5 | Entregue | Compra sugere cotacao atual para cripto/ETF e historica para cripto retroativa, preserva ajustes manuais e restringe quantidades B3 a inteiros; Agenda confirma em lote somente proventos conciliaveis. |
+| Estabilidade e Lista de Desejos 1.4.7 | Entregue no codigo | Interface bloqueia envios repetidos; comprovantes preservam o arquivo anterior durante falhas; dicas financeiras foram removidas da Analise Mensal; cotacoes podem ser atualizadas e descontos registrados na compra. Suíte backend, lint e build do frontend passam; homologacao da release em producao pendente. |
+
+## v1.4.7 - Estabilidade e refinamentos da Lista de Desejos
+
+- Bloquear envios repetidos nos formulários de lançamentos e operações de investimento durante uma gravação.
+- Remover o Copiloto Financeiro e as dicas do fluxo de Análise Mensal.
+- Preservar comprovantes válidos quando uma substituição falhar e registrar a causa técnica nos logs sem expor dados ao usuário.
+- Permitir atualizar a cotação de itens pendentes e informar o desconto realizado ao marcar um desejo como comprado; a transação financeira usa o valor efetivamente pago.
+- Atualizar documentação e metadados do código para a versão 1.4.7.
+
+Esta é a versão do código; a última versão homologada em produção continua sendo a `1.4.5`. A Central de Tributos PF da `1.4.6` ainda requer homologação real conforme os critérios registrados abaixo.
 
 Documentos relacionados:
 
@@ -231,7 +242,7 @@ O procedimento e os valores seguros de configuracao continuam no [runbook de pro
 - DARFs de investimentos pagos aparecem vinculados a mesma transacao, inclusive os historicos reconciliados pela V22; nao se cria outra despesa.
 - API autenticada, isolamento por usuario, reset administrativo contemplando tributos e testes de servico para os fluxos financeiros centrais.
 
-**Ainda nao entregue:** homologacao com IPVA/IPTU reais, anexos de comprovante (ha apenas referencia textual), alertas/calendario, geracao automatica de recorrencias, importacao assistida e calculo fiscal automatico. PJ/CNPJ permanece na `v1.6.0` ou posterior. A release de codigo `1.4.6` nao deve ser confundida com homologacao em producao.
+**Ainda nao entregue:** homologacao com IPVA/IPTU reais, anexo de arquivo de comprovante diretamente na obrigacao tributaria (hoje existe somente uma referencia textual), alertas/calendario, geracao automatica de recorrencias, importacao assistida e calculo fiscal automatico. O anexo de comprovante da transacao financeira e uma funcionalidade separada e esta disponivel. PJ/CNPJ permanece na `v1.6.0` ou posterior. A release de codigo `1.4.6` nao deve ser confundida com homologacao em producao.
 
 ### Objetivo
 

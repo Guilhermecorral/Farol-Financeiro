@@ -1,6 +1,6 @@
 # Investimentos 1.4
 
-Status: investimentos `1.4.5` homologados; documento atualizado para o código `1.4.6` em 12/09/2026. A base de investimentos mantém Agenda B3 em operação controlada, importação assistida e fontes externas revisáveis.
+Status: investimentos `1.4.5` homologados; documento atualizado para o código `1.4.7` em 23/10/2026. A base de investimentos mantém Agenda B3 em operação controlada, importação assistida e fontes externas revisáveis.
 
 ## Entregue nesta etapa
 

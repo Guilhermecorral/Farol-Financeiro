@@ -7,9 +7,9 @@
 [![React](https://img.shields.io/badge/React-18-149ECA?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Version](https://img.shields.io/badge/release-1.4.6-22C55E)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/release-1.4.7-22C55E)](CHANGELOG.md)
 
-**Versão do código: v1.4.6.** A Central de Tributos PF organiza estimativas, guias e pagamentos; só cria despesa após confirmação explícita. A Agenda B3 permanece homologada em operação controlada. Toda importação
+**Versão do código: v1.4.7.** A Central de Tributos PF organiza estimativas, guias e pagamentos; só cria despesa após confirmação explícita. A Agenda B3 permanece homologada em operação controlada. Toda importação
 de investimentos passa por uma revisão obrigatória antes de alterar a carteira. Consulte o [escopo, testes e limitações](docs/INVESTMENTS-1.4.md)
 e o [roadmap do produto](docs/ROADMAP.md).
 
@@ -33,7 +33,7 @@ O sistema foi construído como um projeto de produto real, não apenas como demo
 - **Investimentos:** catálogo de ativos, compras e vendas, preço médio, cotações, rentabilidade, proventos e evolução patrimonial.
 - **Central de Tributos PF:** obrigações pessoais com estimativa, guia, status por vencimento e confirmação de pagamento vinculada ao Histórico Financeiro; PJ permanece em desenvolvimento.
 - **Renda fixa:** cadastro de aplicações e simulador de juros compostos com aportes mensais.
-- **Lista de desejos:** múltiplas listas, prioridades, descontos, histórico e conversão da compra em transação.
+- **Lista de desejos:** múltiplas listas, prioridades, atualização de cotações, descontos na cotação e na compra, histórico e conversão pelo valor pago em transação.
 - **Importação financeira e de investimentos:** prévia editável de extratos e de compras/vendas em CSV, Excel ou OFX, com confirmação obrigatória.
 - **Notas fiscais:** envio em PDF, JPG ou PNG e sugestão de vínculo por valor, data e descrição.
 - **Conta e segurança:** cookies `HttpOnly`, renovação de sessão, recuperação de senha e autenticação em dois fatores.
@@ -168,7 +168,7 @@ Para relatar uma vulnerabilidade, prefira um contato privado com o mantenedor em
 
 ## Estado do Projeto
 
-A versão do código é a **1.4.6**, com a Central de Tributos PF implementada e pendente de homologação em ambiente real. A **1.4.5** foi a última versão homologada em produção. O próximo ciclo de produto está no [roadmap](docs/ROADMAP.md).
+A versão do código é a **1.4.7**, com correções de lançamentos duplicados e comprovantes, remoção das dicas da Análise Mensal e atualização de cotações e descontos na Lista de Desejos. A Central de Tributos PF segue implementada, com homologação em ambiente real pendente. A **1.4.5** foi a última versão homologada em produção. Consulte o [changelog](CHANGELOG.md) e o [roadmap](docs/ROADMAP.md).
 
 ## Autoria
 

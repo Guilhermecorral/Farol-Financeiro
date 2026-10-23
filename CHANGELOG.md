@@ -2,7 +2,7 @@
 
 As mudanças relevantes do Farol Financeiro seguem versionamento semântico.
 
-## [Unreleased]
+## [1.4.7] - 2026-10-23
 
 - O formulário de lançamento bloqueia cliques repetidos durante o envio, mostra o estado de gravação e mantém uma trava síncrona para evitar requisições duplicadas; operações de investimento também protegem o envio repetido.
 - A Análise Mensal não apresenta mais o Copiloto Financeiro nem gera dicas no endpoint; os demais indicadores e comparações permanecem disponíveis.
