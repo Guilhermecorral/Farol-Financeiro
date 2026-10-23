@@ -33,4 +33,3 @@ Uma mudança deve atualizar a documentação quando alterar qualquer um destes p
 - funcionalidade apresentada no README.
 
 Atualizações relevantes ao usuário também devem entrar no [CHANGELOG.md](../CHANGELOG.md).
-
