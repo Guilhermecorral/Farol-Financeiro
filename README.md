@@ -29,7 +29,7 @@ O sistema foi construído como um projeto de produto real, não apenas como demo
 
 - **Painel financeiro:** saldo, receitas, despesas, categorias e movimentações recentes.
 - **Transações:** receitas e despesas, filtros, edição, exclusão e compras parceladas.
-- **Análise mensal:** comparações com períodos anteriores, acumulado anual e insights explicáveis.
+- **Análise mensal:** comparações com períodos anteriores, acumulado anual e destaques dos gastos.
 - **Investimentos:** catálogo de ativos, compras e vendas, preço médio, cotações, rentabilidade, proventos e evolução patrimonial.
 - **Central de Tributos PF:** obrigações pessoais com estimativa, guia, status por vencimento e confirmação de pagamento vinculada ao Histórico Financeiro; PJ permanece em desenvolvimento.
 - **Renda fixa:** cadastro de aplicações e simulador de juros compostos com aportes mensais.

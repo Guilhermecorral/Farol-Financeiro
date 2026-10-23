@@ -87,6 +87,7 @@ Respostas comuns:
 | `GET` | `/api/monthly-analysis?year=2026&month=9` | Retorna a análise mensal consolidada |
 
 `year` e `month` são obrigatórios na análise mensal. No dashboard, ambos são opcionais.
+O endpoint de análise mensal retorna totais, categorias, destaques e comparações do período; não inclui mais sugestões ou dicas financeiras.
 
 ## Transações e comprovantes
 

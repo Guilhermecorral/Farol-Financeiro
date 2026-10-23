@@ -2,6 +2,11 @@
 
 As mudanças relevantes do Farol Financeiro seguem versionamento semântico.
 
+## [Unreleased]
+
+- O formulário de lançamento bloqueia cliques repetidos durante o envio, mostra o estado de gravação e mantém uma trava síncrona para evitar requisições duplicadas; operações de investimento também protegem o envio repetido.
+- A Análise Mensal não apresenta mais o Copiloto Financeiro nem gera dicas no endpoint; os demais indicadores e comparações permanecem disponíveis.
+
 ## [1.4.6] - 2026-09-12
 
 - Central de Tributos PF com escolha de perfil PF/PJ, alteração posterior em Configurações e tela PJ identificada como recurso futuro, sem regras empresariais.

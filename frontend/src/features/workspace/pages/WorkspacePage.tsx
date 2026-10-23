@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Category, TransactionResponse, WishlistItemResponse } from '../../../types';
@@ -125,6 +125,8 @@ export default function WorkspacePage({ onLogout }: WorkspacePageProps) {
   const wishlistHistoryQuery = useWishlistHistoryQuery(historyItemId);
   const purchaseHistoryQuery = useWishlistHistoryQuery(purchaseModalItemId);
   const createTransactionMutation = useCreateTransactionMutation();
+  const transactionSubmissionLock = useRef(false);
+  const [isCreatingTransaction, setIsCreatingTransaction] = useState(false);
   const deleteTransactionMutation = useDeleteTransactionMutation();
   const uploadTransactionReceiptMutation = useUploadTransactionReceiptMutation();
   const createWishlistItemMutation = useCreateWishlistItemMutation();
@@ -262,12 +264,23 @@ export default function WorkspacePage({ onLogout }: WorkspacePageProps) {
   };
 
   const handleCreateTransaction = () => {
+    if (transactionSubmissionLock.current || createTransactionMutation.isPending) {
+      return;
+    }
+
     const parsedAmount = Number(transactionDraft.amount);
     if (!transactionDraft.description || !parsedAmount) {
       return;
     }
 
     const selectedReceipt = transactionReceiptFile;
+    transactionSubmissionLock.current = true;
+    setIsCreatingTransaction(true);
+
+    const releaseSubmissionLock = () => {
+      transactionSubmissionLock.current = false;
+      setIsCreatingTransaction(false);
+    };
 
     createTransactionMutation.mutate(
       {
@@ -282,6 +295,7 @@ export default function WorkspacePage({ onLogout }: WorkspacePageProps) {
       {
         onSuccess: (createdTransaction) => {
           const finishSuccess = () => {
+            releaseSubmissionLock();
             setTransactionDraft(buildTransactionDraft(transactionDraft.type));
             setTransactionReceiptFile(null);
             setTransactionCategoryTouched(false);
@@ -316,6 +330,7 @@ export default function WorkspacePage({ onLogout }: WorkspacePageProps) {
           );
         },
         onError: () => {
+          releaseSubmissionLock();
           pushToast('Não foi possível salvar a transação agora.', 'info');
         },
       },
@@ -871,6 +886,7 @@ export default function WorkspacePage({ onLogout }: WorkspacePageProps) {
         draft={transactionDraft}
         receiptFile={transactionReceiptFile}
         suggestion={transactionSuggestion}
+        isSubmitting={isCreatingTransaction}
         onDraftChange={setTransactionDraft}
         onReceiptFileChange={setTransactionReceiptFile}
         onDescriptionChange={handleTransactionDescriptionChange}

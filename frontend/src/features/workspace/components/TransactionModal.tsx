@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useDeferredValue, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useDeferredValue, useEffect, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Category, InvestmentAssetSearchResponse, InvestmentAssetType, InvestmentPositionRequest, InvestmentPositionResponse, InvestmentTradeRequest, PaymentMethod } from '../../../types';
 import { categoryLabels, paymentMethodLabels } from '../../../lib/mockFinance';
@@ -13,6 +13,7 @@ type TransactionModalProps = {
   draft: TransactionDraft;
   receiptFile: File | null;
   suggestion: Category | null;
+  isSubmitting: boolean;
   onDraftChange: Dispatch<SetStateAction<TransactionDraft>>;
   onReceiptFileChange: (file: File | null) => void;
   onDescriptionChange: (value: string) => void;
@@ -28,6 +29,7 @@ export default function TransactionModal({
   draft,
   receiptFile,
   suggestion,
+  isSubmitting,
   onDraftChange,
   onReceiptFileChange,
   onDescriptionChange,
@@ -76,6 +78,7 @@ export default function TransactionModal({
           <button
             className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
             onClick={onClose}
+            disabled={isSubmitting}
             type="button"
           >
             Fechar
@@ -213,11 +216,12 @@ export default function TransactionModal({
             <p>Se a sugestão errar, o usuário continua livre para trocar manualmente.</p>
           </div>
           <button
-            className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600"
+            className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-300"
             onClick={onSubmit}
+            disabled={isSubmitting}
             type="button"
           >
-            Salvar lançamento
+            {isSubmitting ? 'Salvando lançamento...' : 'Salvar lançamento'}
           </button>
         </div>
           </>
@@ -231,6 +235,7 @@ export default function TransactionModal({
 type TradableAssetType = Exclude<InvestmentAssetType, 'RENDA_FIXA'>;
 
 function InvestmentOperationForm({ onCancel, onRecorded }: { onCancel: () => void; onRecorded: (operation: string) => void }) {
+  const submissionLock = useRef(false);
   const [investmentClass, setInvestmentClass] = useState<'VARIABLE' | 'FIXED'>('VARIABLE');
   const [operation, setOperation] = useState<'COMPRA' | 'VENDA'>('COMPRA');
   const [assetType, setAssetType] = useState<TradableAssetType>('ACAO');
@@ -286,6 +291,7 @@ function InvestmentOperationForm({ onCancel, onRecorded }: { onCancel: () => voi
     setQuantity(Math.min(1, position.quantity ?? 1));
   };
   const submit = () => {
+    if (submissionLock.current || trade.isPending) return;
     if (!selected || effectiveQuantity <= 0 || unitPrice <= 0) {
       setError(isCryptoPurchase
         ? 'Informe quanto foi investido e o preço do criptoativo na operação.'
@@ -314,13 +320,18 @@ function InvestmentOperationForm({ onCancel, onRecorded }: { onCancel: () => voi
       exchangeRate: selected.currency === 'BRL' ? undefined : exchangeRate,
       costs: { brokerageFee: 0, b3Fee: 0, otherCosts: 0, withheldTax: 0 },
     };
+    submissionLock.current = true;
     trade.mutate(payload, {
       onSuccess: () => {
+        submissionLock.current = false;
         const label = `${operation === 'COMPRA' ? 'Compra' : 'Venda'} de ${selected.symbol}`;
         reset();
         onRecorded(label);
       },
-      onError: (reason) => setError(getApiErrorMessage(reason, 'Não foi possível registrar a operação.')),
+      onError: (reason) => {
+        submissionLock.current = false;
+        setError(getApiErrorMessage(reason, 'Não foi possível registrar a operação.'));
+      },
     });
   };
 
@@ -364,11 +375,25 @@ function InvestmentOperationForm({ onCancel, onRecorded }: { onCancel: () => voi
 
 function QuickFixedIncomeForm({ onRecorded }: { onRecorded: (operation: string) => void }) {
   const mutation = useCreateInvestmentMutation();
+  const submissionLock = useRef(false);
   const today = new Date().toISOString().slice(0, 10);
   const nextYear = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0, 10);
   const [form, setForm] = useState<InvestmentPositionRequest>({ assetType: 'RENDA_FIXA', symbol: null, externalId: null, name: '', quantity: null, averagePrice: null, principal: 0, annualRate: 12, purchaseDate: today, maturityDate: nextYear, market: 'BR', exchange: null, currency: 'BRL', taxRegime: 'REGRESSIVO', iofApplicable: true, fixedIncomeYieldType: 'PREFIXADO', fixedIncomeIndexer: null, dailyLiquidity: false });
   const [error, setError] = useState('');
-  const submit = () => mutation.mutate(form, { onSuccess: () => onRecorded(`Aplicação em ${form.name}`), onError: (reason) => setError(getApiErrorMessage(reason, 'Não foi possível registrar a aplicação.')) });
+  const submit = () => {
+    if (submissionLock.current || mutation.isPending) return;
+    submissionLock.current = true;
+    mutation.mutate(form, {
+      onSuccess: () => {
+        submissionLock.current = false;
+        onRecorded(`Aplicação em ${form.name}`);
+      },
+      onError: (reason) => {
+        submissionLock.current = false;
+        setError(getApiErrorMessage(reason, 'Não foi possível registrar a aplicação.'));
+      },
+    });
+  };
   return <div className="space-y-4"><p className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-slate-700">A aplicação cria uma despesa de investimento e aparece no painel financeiro, nas transações e na carteira.</p><div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium text-slate-700">Nome ou emissor<input className="mt-1 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="CDB, Tesouro ou LCI" /></label><label className="text-sm font-medium text-slate-700">Tipo de rentabilidade<select className="mt-1 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" value={form.fixedIncomeYieldType ?? 'PREFIXADO'} onChange={(event) => setForm({ ...form, fixedIncomeYieldType: event.target.value as 'PREFIXADO' | 'POS_FIXADO' | 'HIBRIDO' })}><option value="PREFIXADO">Prefixado</option><option value="POS_FIXADO">Pós-fixado</option><option value="HIBRIDO">Híbrido</option></select></label><label className="text-sm font-medium text-slate-700">Valor aplicado<input className="mt-1 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" type="number" min="0.01" value={form.principal ?? 0} onChange={(event) => setForm({ ...form, principal: Number(event.target.value) })} /></label><label className="text-sm font-medium text-slate-700">Taxa anual (%)<input className="mt-1 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" type="number" min="0" value={form.annualRate ?? 0} onChange={(event) => setForm({ ...form, annualRate: Number(event.target.value) })} /></label><label className="text-sm font-medium text-slate-700">Data da aplicação<input className="mt-1 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" type="date" max={today} value={form.purchaseDate} onChange={(event) => setForm({ ...form, purchaseDate: event.target.value })} /></label>{!form.dailyLiquidity && <label className="text-sm font-medium text-slate-700">Vencimento<input className="mt-1 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" type="date" value={form.maturityDate ?? nextYear} onChange={(event) => setForm({ ...form, maturityDate: event.target.value })} /></label>}</div><label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={!!form.dailyLiquidity} onChange={(event) => setForm({ ...form, dailyLiquidity: event.target.checked, maturityDate: event.target.checked ? null : nextYear })} /> Liquidez diária, sem vencimento definido</label>{error && <p className="rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}<button type="button" disabled={mutation.isPending || !form.name.trim() || (form.principal ?? 0) <= 0} onClick={submit} className="w-full rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-white disabled:bg-slate-300">{mutation.isPending ? 'Registrando...' : 'Aplicar e atualizar carteira'}</button></div>;
 }
 

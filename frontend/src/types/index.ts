@@ -289,16 +289,6 @@ export interface MonthlyAnalysisResponse {
   comparativoMesmoMesAnoAnterior: ComparisonSnapshot;
   acumuladoAnoAtual: YearToDateSummary;
   comparativoAcumuladoAnoAnterior: YearToDateComparison;
-  insights: FinancialInsight[];
-}
-
-export interface FinancialInsight {
-  code: string;
-  severity: 'POSITIVO' | 'ATENCAO' | 'CRITICO' | 'NEUTRO';
-  title: string;
-  message: string;
-  evidence: string;
-  suggestedAmount: number | null;
 }
 
 export interface WishlistListResponse {
