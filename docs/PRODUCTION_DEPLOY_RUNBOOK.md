@@ -35,6 +35,18 @@ Configure no Render:
 - `APP_COOKIES_SAME_SITE=Lax`
 - `APP_ALLOWED_ORIGINS=https://farolfinanceiro.online,https://www.farolfinanceiro.online`
 
+## Armazenamento de comprovantes
+
+O backend grava os anexos em `APP_TRANSACTION_RECEIPTS_STORAGE_DIR`; por padrão, o caminho é `storage/transaction-receipts` relativo ao diretório de execução (`/app/storage/transaction-receipts` na imagem Docker do backend). O processo `spring` precisa ter permissão de escrita no diretório configurado. A imagem prepara o caminho padrão com essa permissão e verifica isso durante o build.
+
+No `docker-compose.prod.yml`, o caminho `/app/storage` é montado no volume nomeado `backend_storage`. Se esse volume já existia antes da correção de permissões, ajuste o proprietário uma vez antes de testar novos uploads:
+
+```bash
+docker compose -f docker-compose.prod.yml exec -u root backend chown -R spring:spring /app/storage
+```
+
+Em provedores de container, arquivos no filesystem local podem desaparecer em reinicializações ou novos deploys. Configure um disco persistente montado no diretório usado por `APP_TRANSACTION_RECEIPTS_STORAGE_DIR` ou armazenamento externo compatível antes de depender dos comprovantes como arquivo permanente. Falhas de gravação mantêm uma mensagem genérica para o usuário e registram a exceção do filesystem nos logs do backend, sem registrar o conteúdo do arquivo.
+
 Depois do deploy, confirme no DevTools que o login retorna `Set-Cookie` pela URL `/api/auth/login` do domínio oficial e que `/api/auth/me` responde `200`. Não peça ao usuário para liberar cookies de terceiros: o proxy existe justamente para que a sessão continue segura em navegação privada.
 
 ## Piloto Agenda B3

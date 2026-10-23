@@ -19,11 +19,13 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.stream.IntStream;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
@@ -38,6 +40,9 @@ class TransactionServiceTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private TransactionReceiptStorageService transactionReceiptStorageService;
 
     @AfterEach
     void tearDown() {
@@ -154,6 +159,41 @@ class TransactionServiceTest {
         assertEquals(1, receipts.size());
         assertEquals(created.id(), receipts.getFirst().transactionId());
         assertEquals("nota-fiscal.pdf", receipts.getFirst().originalFilename());
+    }
+
+    @Test
+    void shouldKeepPreviousReceiptWhenReplacementUploadIsInvalid() throws Exception {
+        User user = authenticateDefaultUser();
+        TransactionResponseDTO created = transactionService.create(new TransactionRequestDTO(
+                Transaction.TransactionType.DESPESA,
+                "Compra com comprovante",
+                Transaction.TransactionCategory.OUTROS,
+                new BigDecimal("50.00"),
+                Transaction.PaymentMethod.PIX,
+                1,
+                LocalDate.of(2026, 2, 14)
+        ));
+        byte[] originalContent = "%PDF-1.4 comprovante valido".getBytes(StandardCharsets.UTF_8);
+
+        try {
+            transactionService.attachReceipt(created.id(), new MockMultipartFile(
+                    "file", "original.pdf", "application/pdf", originalContent
+            ));
+
+            MockMultipartFile invalidReplacement = new MockMultipartFile(
+                    "file", "novo.pdf", "application/pdf", "arquivo invalido".getBytes(StandardCharsets.UTF_8)
+            );
+            assertThrows(IllegalArgumentException.class,
+                    () -> transactionService.attachReceipt(created.id(), invalidReplacement));
+
+            byte[] downloadedContent = transactionService.loadReceiptForDownload(created.id())
+                    .resource()
+                    .getInputStream()
+                    .readAllBytes();
+            assertArrayEquals(originalContent, downloadedContent);
+        } finally {
+            transactionReceiptStorageService.deleteAllReceipts(user.getId());
+        }
     }
 
     @Test

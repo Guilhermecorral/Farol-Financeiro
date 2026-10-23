@@ -104,7 +104,7 @@ Os principais grupos são:
 | CAPTCHA | Verificação antiabuso |
 | Redis | Rate limit compartilhado |
 | Mercado | Tokens e URLs dos provedores de cotação |
-| Storage | Diretório persistente de comprovantes |
+| Storage | `APP_TRANSACTION_RECEIPTS_STORAGE_DIR` aponta para o diretório gravável dos comprovantes (padrão: `storage/transaction-receipts` relativo ao diretório de execução); use armazenamento persistente em produção |
 
 Ao adicionar uma variável, atualize o arquivo de exemplo e a documentação na mesma alteração. Nunca inclua o valor real de um segredo.
 

@@ -106,6 +106,7 @@ O endpoint de análise mensal retorna totais, categorias, destaques e comparaç�
 | `GET` | `/api/transactions/{id}/receipt/download` | Baixa o comprovante vinculado |
 
 Uploads usam `multipart/form-data`. O campo do extrato é `file`, o campo do anexo individual é `file` e a análise em lote usa `files`.
+Comprovantes individuais aceitam PDF, JPG ou PNG de até 10 MB. O arquivo é gravado no diretório configurado no backend e associado à transação somente após a validação do conteúdo; ao substituir um anexo, o anterior é removido depois que a atualização do banco é confirmada.
 
 ## Investimentos
 

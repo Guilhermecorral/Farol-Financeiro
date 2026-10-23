@@ -9,10 +9,13 @@ import com.controledegastos.backend.transactions.DTO.TransactionReceiptSummaryDT
 import com.controledegastos.backend.transactions.DTO.TransactionResponseDTO;
 import com.controledegastos.backend.transactions.Repository.TransactionRepository;
 import com.controledegastos.backend.user.User;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -32,6 +35,7 @@ import java.util.UUID;
 @Transactional
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
@@ -360,10 +364,20 @@ public class TransactionService {
                         user
                 );
 
-        targetTransactions.forEach(this::deleteReceiptIfPresent);
+        List<String> previousStorageNames = targetTransactions.stream()
+                .map(Transaction::getReceiptStorageName)
+                .filter(storageName -> storageName != null && !storageName.isBlank())
+                .distinct()
+                .toList();
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalStateException("O armazenamento do comprovante exige uma transacao ativa");
+        }
 
         TransactionReceiptStorageService.StoredReceipt storedReceipt = transactionReceiptStorageService
                 .saveReceipt(user.getId(), transaction.getId(), file);
+
+        registerReceiptReplacementCleanup(user.getId(), storedReceipt.storageName(), previousStorageNames);
 
         LocalDateTime uploadedAt = LocalDateTime.now();
         targetTransactions.forEach(targetTransaction -> {
@@ -381,6 +395,31 @@ public class TransactionService {
                 .orElse(savedTransactions.getFirst());
 
         return toResponseDTO(savedTransaction);
+    }
+
+    private void registerReceiptReplacementCleanup(Long userId, String newStorageName, List<String> previousStorageNames) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                previousStorageNames.forEach(storageName -> deleteReceiptAfterReplacement(userId, storageName));
+            }
+
+            @Override
+            public void afterCompletion(int status) {
+                if (status != STATUS_COMMITTED) {
+                    deleteReceiptAfterReplacement(userId, newStorageName);
+                }
+            }
+        });
+    }
+
+    private void deleteReceiptAfterReplacement(Long userId, String storageName) {
+        try {
+            transactionReceiptStorageService.deleteReceipt(storageName, userId);
+        } catch (RuntimeException exception) {
+            log.warn("Falha ao limpar arquivo de comprovante após substituição (userId={}, storageName={})",
+                    userId, storageName, exception);
+        }
     }
 
     /**

@@ -6,6 +6,7 @@ As mudanças relevantes do Farol Financeiro seguem versionamento semântico.
 
 - O formulário de lançamento bloqueia cliques repetidos durante o envio, mostra o estado de gravação e mantém uma trava síncrona para evitar requisições duplicadas; operações de investimento também protegem o envio repetido.
 - A Análise Mensal não apresenta mais o Copiloto Financeiro nem gera dicas no endpoint; os demais indicadores e comparações permanecem disponíveis.
+- O armazenamento de comprovantes prepara o diretório padrão para o usuário não privilegiado do container, preserva a causa de falhas nos logs e mantém o arquivo anterior até a substituição ser confirmada no banco.
 
 ## [1.4.6] - 2026-09-12
 

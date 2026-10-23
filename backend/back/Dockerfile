@@ -14,11 +14,14 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 RUN addgroup -S spring && adduser -S spring -G spring
+RUN mkdir -p /app/storage/transaction-receipts && chown -R spring:spring /app/storage
 
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
 USER spring
+
+RUN test -w /app/storage/transaction-receipts
 
 ENTRYPOINT ["java", "-Duser.timezone=UTC", "-jar", "app.jar"]

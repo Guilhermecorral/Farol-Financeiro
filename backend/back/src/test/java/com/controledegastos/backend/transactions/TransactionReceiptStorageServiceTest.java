@@ -6,8 +6,10 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TransactionReceiptStorageServiceTest {
 
@@ -32,5 +34,23 @@ class TransactionReceiptStorageServiceTest {
         try (var remainingFiles = Files.list(tempDirectory.resolve("user-20"))) {
             assertThat(remainingFiles).isNotEmpty();
         }
+    }
+
+    @Test
+    void shouldKeepFilesystemCauseWhenReceiptStorageCannotBeWritten() throws Exception {
+        Path fileInsteadOfDirectory = tempDirectory.resolve("storage-root");
+        Files.writeString(fileInsteadOfDirectory, "not a directory");
+        TransactionReceiptStorageService storageService = new TransactionReceiptStorageService(fileInsteadOfDirectory.toString(), 1024);
+        MockMultipartFile receipt = new MockMultipartFile(
+                "file",
+                "comprovante.pdf",
+                "application/pdf",
+                "%PDF-1.4 test".getBytes()
+        );
+
+        assertThatThrownBy(() -> storageService.saveReceipt(10L, 1L, receipt))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Nao foi possivel salvar a nota fiscal agora")
+                .hasCauseInstanceOf(IOException.class);
     }
 }

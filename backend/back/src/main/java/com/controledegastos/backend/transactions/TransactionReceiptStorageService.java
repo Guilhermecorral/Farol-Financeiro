@@ -1,5 +1,7 @@
 package com.controledegastos.backend.transactions;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -9,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.text.Normalizer;
 import java.util.Comparator;
 import java.util.Locale;
@@ -21,6 +23,8 @@ import java.util.UUID;
  */
 @Service
 public class TransactionReceiptStorageService {
+
+    private static final Logger log = LoggerFactory.getLogger(TransactionReceiptStorageService.class);
 
     private static final Map<String, String> CONTENT_TYPE_EXTENSIONS = Map.of(
             "application/pdf", ".pdf",
@@ -65,11 +69,12 @@ public class TransactionReceiptStorageService {
             }
 
             Files.createDirectories(userDirectory);
-            Files.copy(file.getInputStream(), storedPath, StandardCopyOption.REPLACE_EXISTING);
+            Files.write(storedPath, content, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
 
             return new StoredReceipt(originalFilename, storageName, contentType, file.getSize());
         } catch (IOException exception) {
-            throw new IllegalStateException("Nao foi possivel salvar a nota fiscal agora");
+            log.error("Falha ao gravar comprovante no armazenamento configurado em {}", storageRoot, exception);
+            throw new IllegalStateException("Nao foi possivel salvar a nota fiscal agora", exception);
         }
     }
 
