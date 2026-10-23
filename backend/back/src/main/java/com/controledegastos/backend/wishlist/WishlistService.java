@@ -150,6 +150,14 @@ public class WishlistService {
             throw new IllegalArgumentException("Purchase payment method is required");
         }
 
+        BigDecimal purchaseDiscountPercent = dto.purchaseDiscountPercent() == null
+                ? BigDecimal.ZERO
+                : dto.purchaseDiscountPercent();
+        if (purchaseDiscountPercent.compareTo(BigDecimal.ZERO) < 0
+                || purchaseDiscountPercent.compareTo(BigDecimal.valueOf(100)) >= 0) {
+            throw new IllegalArgumentException("Purchase discount percent must be at least 0 and less than 100");
+        }
+
         if (dto.paymentMethod() == WishlistItem.PurchasePaymentMethod.CARTAO_CREDITO_PARCELADO) {
             if (dto.installments() == null || dto.installments() < 2) {
                 throw new IllegalArgumentException("Parcelled purchases must have at least 2 installments");
@@ -181,6 +189,8 @@ public class WishlistService {
                 item.getOriginalPrice(),
                 item.getDiscountPercent(),
                 item.getFinalPrice(),
+                item.getPurchaseDiscountPercent(),
+                item.getPurchaseFinalPrice(),
                 item.getPriority(),
                 item.getCategory(),
                 item.getNotes(),
@@ -231,13 +241,22 @@ public class WishlistService {
      * Registra eventos importantes do ciclo de vida do item para auditoria funcional da wishlist.
      */
     private void registerHistory(WishlistItem item, WishlistHistoryEntry.ActionType actionType, String description) {
+        registerHistory(item, actionType, description, item.getFinalPrice());
+    }
+
+    private void registerHistory(
+            WishlistItem item,
+            WishlistHistoryEntry.ActionType actionType,
+            String description,
+            BigDecimal priceSnapshot
+    ) {
         wishlistHistoryEntryRepository.save(
                 WishlistHistoryEntry.builder()
                         .wishlistItem(item)
                         .user(item.getUser())
                         .actionType(actionType)
                         .description(description)
-                        .finalPriceSnapshot(item.getFinalPrice())
+                        .finalPriceSnapshot(priceSnapshot)
                         .listNameSnapshot(item.getWishlistList().getName())
                         .build()
         );
@@ -298,7 +317,7 @@ public class WishlistService {
                     .type(Transaction.TransactionType.DESPESA)
                     .description(item.getDescription())
                     .category(mapCategory(item.getCategory()))
-                    .amount(item.getFinalPrice())
+                    .amount(item.getPurchaseFinalPrice())
                     .paymentMethod(mapPaymentMethod(item.getPaymentMethod()))
                     .transactionGroupId(transactionGroupId)
                     .transactionDate(baseDate)
@@ -306,14 +325,14 @@ public class WishlistService {
             return generatedTransactions;
         }
 
-        BigDecimal baseInstallmentAmount = item.getFinalPrice()
+        BigDecimal baseInstallmentAmount = item.getPurchaseFinalPrice()
                 .divide(BigDecimal.valueOf(installments), 2, RoundingMode.DOWN);
         BigDecimal accumulatedAmount = BigDecimal.ZERO;
 
         for (int installmentNumber = 1; installmentNumber <= installments; installmentNumber++) {
             LocalDate installmentDate = baseDate.plusMonths((long) installmentNumber - 1L);
             BigDecimal installmentAmount = installmentNumber == installments
-                    ? item.getFinalPrice().subtract(accumulatedAmount)
+                    ? item.getPurchaseFinalPrice().subtract(accumulatedAmount)
                     : baseInstallmentAmount;
 
             accumulatedAmount = accumulatedAmount.add(installmentAmount);
@@ -558,6 +577,8 @@ public class WishlistService {
         WishlistItem item = getOwnedWishlistItem(id, user);
         WishlistList previousList = item.getWishlistList();
         WishlistList targetList = resolveTargetList(dto.listId(), user);
+        BigDecimal previousQuote = item.getFinalPrice();
+        BigDecimal previousQuoteDiscount = item.getDiscountPercent();
 
         if (item.getStatus() == WishlistItem.WishlistStatus.COMPRADO) {
             throw new IllegalArgumentException("Purchased wishlist items cannot be edited through the generic update flow");
@@ -573,7 +594,15 @@ public class WishlistService {
         item.calculateFinalPrice();
 
         WishlistItem savedItem = wishlistRepository.save(item);
-        registerHistory(savedItem, WishlistHistoryEntry.ActionType.UPDATED, "Item details updated");
+        String updateDescription = "Item details updated";
+        if (previousQuote.compareTo(savedItem.getFinalPrice()) != 0
+                || previousQuoteDiscount.compareTo(savedItem.getDiscountPercent()) != 0) {
+            updateDescription += "; cotação: " + previousQuote.toPlainString()
+                    + " (desconto " + previousQuoteDiscount.toPlainString() + "%) para "
+                    + savedItem.getFinalPrice().toPlainString()
+                    + " (desconto " + savedItem.getDiscountPercent().toPlainString() + "%)";
+        }
+        registerHistory(savedItem, WishlistHistoryEntry.ActionType.UPDATED, updateDescription);
 
         if (!previousList.getId().equals(targetList.getId())) {
             registerHistory(savedItem, WishlistHistoryEntry.ActionType.MOVED, "Item moved between wishlist lists");
@@ -601,6 +630,15 @@ public class WishlistService {
         }
 
         item.setStatus(WishlistItem.WishlistStatus.COMPRADO);
+        BigDecimal purchaseDiscountPercent = dto.purchaseDiscountPercent() == null
+                ? BigDecimal.ZERO
+                : dto.purchaseDiscountPercent();
+        BigDecimal purchaseFinalPrice = item.calculatePurchaseFinalPrice(purchaseDiscountPercent);
+        if (purchaseFinalPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("O valor pago precisa ser maior que zero");
+        }
+        item.setPurchaseDiscountPercent(purchaseDiscountPercent);
+        item.setPurchaseFinalPrice(purchaseFinalPrice);
         item.setPurchaseDate(dto.purchaseDate());
         item.setPaymentMethod(dto.paymentMethod());
         item.setInstallments(dto.installments() == null ? 1 : dto.installments());
@@ -609,7 +647,10 @@ public class WishlistService {
 
         WishlistItem savedItem = wishlistRepository.save(item);
         transactionRepository.saveAll(buildPurchaseTransactions(savedItem));
-        registerHistory(savedItem, WishlistHistoryEntry.ActionType.PURCHASED, "Item marked as purchased");
+        String purchaseDescription = "Cotação: " + savedItem.getFinalPrice().toPlainString()
+                + "; desconto na compra: " + purchaseDiscountPercent.toPlainString()
+                + "%; valor pago: " + purchaseFinalPrice.toPlainString();
+        registerHistory(savedItem, WishlistHistoryEntry.ActionType.PURCHASED, purchaseDescription, purchaseFinalPrice);
 
         return toResponseDTO(savedItem);
     }
@@ -629,6 +670,8 @@ public class WishlistService {
         transactionRepository.deleteAllByWishlistItem(item);
 
         item.setStatus(WishlistItem.WishlistStatus.PENDENTE);
+        item.setPurchaseDiscountPercent(BigDecimal.ZERO);
+        item.setPurchaseFinalPrice(null);
         item.setPurchaseDate(null);
         item.setPaymentMethod(null);
         item.setInstallments(1);

@@ -231,35 +231,45 @@ export default function WishlistPage({
                   </div>
 
                   <div className="rounded-[22px] border border-slate-200 bg-white px-4 py-3 text-right">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Preço final</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      {item.status === 'COMPRADO' ? 'Preço cotado' : 'Preço cotado atual'}
+                    </p>
                     <p className="mt-2 text-xl font-semibold text-slate-900">{item.finalPrice > 0 ? formatCurrency(item.finalPrice) : 'Preço não informado'}</p>
                     {item.discountPercent > 0 && (
                       <p className="mt-2 text-sm text-emerald-600">
                         De {formatCurrency(item.originalPrice)} para {formatCurrency(item.finalPrice)}
                       </p>
                     )}
+                    {item.status === 'COMPRADO' && item.purchaseFinalPrice != null && (
+                      <div className="mt-3 border-t border-slate-100 pt-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-600">Valor pago</p>
+                        <p className="mt-1 text-lg font-semibold text-emerald-700">{formatCurrency(item.purchaseFinalPrice)}</p>
+                        <p className="mt-1 text-xs text-slate-500">Desconto na compra: {item.purchaseDiscountPercent}%</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {item.status === 'PENDENTE' && item.finalPrice <= 0 && (
-                  <div className="mt-4 flex flex-col gap-3 rounded-[20px] border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-end">
-                    <Field label="Complete o preço antes de comprar">
+                {item.status === 'PENDENTE' && (
+                  <div className="mt-4 flex flex-col gap-3 rounded-[20px] border border-slate-200 bg-white p-4 sm:flex-row sm:items-end">
+                    <Field label={item.finalPrice > 0 ? 'Novo preço cotado' : 'Informe o preço cotado'}>
                       <input
                         type="number"
-                        min="0.01"
+                        min="0"
                         step="0.01"
-                        placeholder="0,00"
-                        value={priceDrafts[item.id] ?? ''}
+                        placeholder="Preço cotado"
+                        value={priceDrafts[item.id] ?? String(item.finalPrice)}
                         onChange={(event) => setPriceDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
-                        className="h-11 w-full rounded-xl border border-amber-200 bg-white px-3 outline-none focus:border-amber-400"
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 outline-none focus:border-emerald-400"
                       />
                     </Field>
                     <button
                       type="button"
                       onClick={() => onSetPrice(item, Number(priceDrafts[item.id]))}
-                      className="h-11 rounded-full bg-amber-500 px-5 text-sm font-semibold text-white transition hover:bg-amber-600"
+                      disabled={!Number.isFinite(Number(priceDrafts[item.id])) || Number(priceDrafts[item.id]) <= 0}
+                      className="h-11 rounded-full bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                     >
-                      Salvar preço
+                      Atualizar cotação
                     </button>
                   </div>
                 )}

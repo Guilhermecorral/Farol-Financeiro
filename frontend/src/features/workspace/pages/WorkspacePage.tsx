@@ -103,6 +103,7 @@ export default function WorkspacePage({ onLogout }: WorkspacePageProps) {
     paymentMethod: 'PIX',
     installments: 1,
     firstInstallmentNextMonth: false,
+    purchaseDiscountPercent: '0',
   });
   const isAdmin = user?.role === 'ADMIN';
 
@@ -347,7 +348,7 @@ export default function WorkspacePage({ onLogout }: WorkspacePageProps) {
       data: {
         description: item.description,
         originalPrice: price,
-        discountPercent: item.discountPercent,
+        discountPercent: 0,
         priority: item.priority,
         category: item.category,
         notes: item.notes,
@@ -512,6 +513,7 @@ export default function WorkspacePage({ onLogout }: WorkspacePageProps) {
           paymentMethod: purchaseDraft.paymentMethod,
           installments: purchaseDraft.installments,
           firstInstallmentNextMonth: purchaseDraft.firstInstallmentNextMonth,
+          purchaseDiscountPercent: Number(purchaseDraft.purchaseDiscountPercent || 0),
         },
       },
       {
@@ -523,6 +525,7 @@ export default function WorkspacePage({ onLogout }: WorkspacePageProps) {
               paymentMethod: 'PIX',
               installments: 1,
               firstInstallmentNextMonth: false,
+              purchaseDiscountPercent: '0',
             });
             setPurchaseReceiptFile(null);
             setPurchaseModalItemId(null);
@@ -834,6 +837,7 @@ export default function WorkspacePage({ onLogout }: WorkspacePageProps) {
               onCreate={handleCreateWishlistItem}
               onMarkPurchased={(itemId) => {
                 setPurchaseReceiptFile(null);
+                setPurchaseDraft((current) => ({ ...current, purchaseDiscountPercent: '0' }));
                 setPurchaseModalItemId(itemId);
               }}
               onUndoPurchase={handleUndoPurchase}

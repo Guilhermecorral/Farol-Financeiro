@@ -38,6 +38,7 @@ export type PurchaseDraft = {
   paymentMethod: PaymentMethod;
   installments: number;
   firstInstallmentNextMonth: boolean;
+  purchaseDiscountPercent: string;
 };
 
 export type ToastTone = 'success' | 'info';

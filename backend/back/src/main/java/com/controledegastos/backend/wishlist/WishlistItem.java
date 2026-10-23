@@ -34,6 +34,13 @@ public class WishlistItem {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal finalPrice;
 
+    @Column(nullable = false, precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal purchaseDiscountPercent = BigDecimal.ZERO;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal purchaseFinalPrice;
+
     @Column(nullable = false)
     @Convert(converter = WishlistPriorityConverter.class)
     @Builder.Default
@@ -112,6 +119,13 @@ public class WishlistItem {
                     .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
             this.finalPrice = this.originalPrice.subtract(discount).setScale(2, java.math.RoundingMode.HALF_UP);
         }
+    }
+
+    public BigDecimal calculatePurchaseFinalPrice(BigDecimal discountPercent) {
+        BigDecimal safeDiscount = discountPercent == null ? BigDecimal.ZERO : discountPercent;
+        return this.finalPrice
+                .multiply(BigDecimal.valueOf(100).subtract(safeDiscount))
+                .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
     }
 
     public enum WishlistStatus {

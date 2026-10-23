@@ -41,7 +41,8 @@ public interface WishlistRepository extends JpaRepository<WishlistItem, Long> {
     /**
      * Soma o valor final dos itens de um status especifico para montar o resumo da wishlist.
      */
-    @Query("SELECT COALESCE(SUM(w.finalPrice), 0) FROM WishlistItem w WHERE w.user = :user AND w.status = :status")
+    @Query("SELECT COALESCE(SUM(COALESCE(w.purchaseFinalPrice, w.finalPrice)), 0) " +
+            "FROM WishlistItem w WHERE w.user = :user AND w.status = :status")
     BigDecimal sumFinalPriceByUserAndStatus(
             @Param("user") User user,
             @Param("status") WishlistItem.WishlistStatus status

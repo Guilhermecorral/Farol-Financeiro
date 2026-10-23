@@ -233,6 +233,22 @@ Na confirmação, envie `paidAmount`, `paidDate`, `accountDescription` e `receip
 
 A listagem aceita `status`, `sortBy` e `listId` como parâmetros opcionais.
 
+Itens pendentes podem ter a cotação atualizada por `PUT /api/wishlist/{id}` ou pela tela da lista. Na atualização da cotação pela tela, o novo valor informado passa a ser a cotação base e zera o desconto de cotação anterior; o histórico registra os valores e descontos antes e depois. Para concluir uma compra, envie `purchaseDiscountPercent` opcional em `POST /api/wishlist/{id}/purchase`; o percentual deve estar entre 0 e menos de 100. O desconto é aplicado sobre o preço final cotado, arredondado para centavos, e o valor pago é persistido separadamente para manter a cotação original.
+
+Exemplo de compra com cotação final de R$ 200,00 e desconto de 10%:
+
+```json
+{
+  "purchaseDate": "2026-10-22",
+  "paymentMethod": "PIX",
+  "installments": 1,
+  "firstInstallmentNextMonth": false,
+  "purchaseDiscountPercent": 10
+}
+```
+
+A resposta mantém `finalPrice` como cotação (R$ 200,00) e inclui `purchaseDiscountPercent` (10) e `purchaseFinalPrice` (R$ 180,00). A despesa e o resumo de itens comprados usam `purchaseFinalPrice`. O campo novo é opcional na requisição; se omitido, o desconto da compra é zero.
+
 ## Administração
 
 Todas as rotas exigem permissão administrativa.

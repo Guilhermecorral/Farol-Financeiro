@@ -108,6 +108,8 @@ erDiagram
 
 As posições de investimento representam o estado consolidado. Compras, vendas e proventos são fatos históricos e não devem ser apagados apenas para ajustar o saldo; correções devem preservar rastreabilidade sempre que possível. A única exceção operacional é o reset administrativo explícito de uma conta de homologação: ele apaga todo o domínio financeiro em uma transação, inclusive comprovantes, obrigações tributárias e staging, mas preserva `users`, autenticação, papel, status e 2FA para permitir um novo cenário de teste.
 
+Na Lista de Desejos, `original_price`, `discount_percent` e `final_price` representam a cotação atual e continuam preservados após a compra. `purchase_discount_percent` e `purchase_final_price` registram separadamente o desconto realizado e o valor efetivamente pago; transações geradas e o total de itens comprados usam o valor pago. A migração V23 preenche o valor de compra histórico com o preço final existente e considera desconto realizado zero para compras anteriores à mudança.
+
 Na Central de Tributos, `tax_obligations` pertence a um usuário. O estágio estimativa/guia e o status de vencimento não geram transação. Apenas a confirmação de pagamento cria uma despesa `IMPOSTOS` vinculada; DARFs de investimentos reutilizam a transação já registrada no fluxo de investimentos. A migração V22 reconcilia DARFs históricos pagos e a restrição única em `linked_darf_id` impede vínculo duplicado.
 
 ## Investimentos e cotações

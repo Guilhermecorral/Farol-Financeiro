@@ -99,12 +99,16 @@ class WishlistServiceTest {
                 LocalDate.of(2026, 7, 19),
                 WishlistItem.PurchasePaymentMethod.CARTAO_CREDITO_PARCELADO,
                 3,
-                false
+                false,
+                new BigDecimal("0")
         ));
 
         assertEquals(WishlistItem.WishlistStatus.COMPRADO, purchased.status());
         assertEquals(LocalDate.of(2026, 7, 19), purchased.purchaseDate());
         assertEquals(3, purchased.installments());
+        assertEquals(new BigDecimal("4500.00"), purchased.finalPrice());
+        assertEquals(new BigDecimal("0"), purchased.purchaseDiscountPercent());
+        assertEquals(new BigDecimal("4500.00"), purchased.purchaseFinalPrice());
         assertTrue(purchased.archivedAfterPurchase());
 
         WishlistItem persistedItem = wishlistRepository.findById(created.id()).orElseThrow();
@@ -115,6 +119,7 @@ class WishlistServiceTest {
         assertEquals(LocalDate.of(2026, 7, 19), generatedTransactions.get(0).getTransactionDate());
         assertEquals(LocalDate.of(2026, 8, 19), generatedTransactions.get(1).getTransactionDate());
         assertEquals(LocalDate.of(2026, 9, 19), generatedTransactions.get(2).getTransactionDate());
+        assertEquals(new BigDecimal("4500.00"), wishlistService.getSummary().valorTotalComprados());
 
         List<WishlistHistoryResponseDTO> historyAfterPurchase = wishlistService.getHistory(created.id());
         assertEquals(2, historyAfterPurchase.size());
@@ -134,6 +139,7 @@ class WishlistServiceTest {
 
         assertEquals(WishlistItem.WishlistStatus.PENDENTE, undone.status());
         assertEquals(1, undone.installments());
+        assertTrue(undone.purchaseFinalPrice() == null);
         assertFalse(undone.archivedAfterPurchase());
         assertEquals(0, transactionRepository.findAll().size());
 
@@ -219,8 +225,69 @@ class WishlistServiceTest {
         assertEquals(BigDecimal.ZERO.setScale(2), imported.finalPrice());
         assertThrows(IllegalArgumentException.class, () -> wishlistService.markAsPurchased(
                 imported.id(),
-                new WishlistPurchaseRequestDTO(LocalDate.now(), WishlistItem.PurchasePaymentMethod.PIX, 1, false)
+                new WishlistPurchaseRequestDTO(LocalDate.now(), WishlistItem.PurchasePaymentMethod.PIX, 1, false, BigDecimal.ZERO)
         ));
+    }
+
+    @Test
+    void shouldUpdateQuotedPriceRepeatedlyAndRecordDiscountedPurchaseSeparately() {
+        authenticateDefaultUser();
+        WishlistListResponseDTO defaultList = wishlistService.findAllLists().getFirst();
+        WishlistResponseDTO created = wishlistService.create(new WishlistRequestDTO(
+                "Fone de ouvido",
+                new BigDecimal("250.00"),
+                BigDecimal.ZERO,
+                WishlistItem.Priority.MEDIA,
+                WishlistItem.WishlistCategory.COMPRAS,
+                "",
+                defaultList.id()
+        ));
+
+        WishlistResponseDTO firstQuote = wishlistService.update(created.id(), new WishlistRequestDTO(
+                created.description(), new BigDecimal("220.00"), BigDecimal.ZERO, created.priority(),
+                created.category(), created.notes(), created.listId()
+        ));
+        WishlistResponseDTO currentQuote = wishlistService.update(created.id(), new WishlistRequestDTO(
+                created.description(), new BigDecimal("200.00"), BigDecimal.ZERO, created.priority(),
+                created.category(), created.notes(), created.listId()
+        ));
+
+        assertEquals(new BigDecimal("220.00"), firstQuote.finalPrice());
+        assertEquals(new BigDecimal("200.00"), currentQuote.finalPrice());
+
+        WishlistResponseDTO purchased = wishlistService.markAsPurchased(created.id(), new WishlistPurchaseRequestDTO(
+                LocalDate.of(2026, 10, 22), WishlistItem.PurchasePaymentMethod.PIX, 1, false,
+                new BigDecimal("10.00")
+        ));
+
+        assertEquals(new BigDecimal("200.00"), purchased.finalPrice());
+        assertEquals(new BigDecimal("10.00"), purchased.purchaseDiscountPercent());
+        assertEquals(new BigDecimal("180.00"), purchased.purchaseFinalPrice());
+        assertEquals(new BigDecimal("180.00"), transactionRepository.findAll().getFirst().getAmount());
+        assertEquals(new BigDecimal("180.00"), wishlistService.getSummary().valorTotalComprados());
+
+        WishlistHistoryResponseDTO purchaseHistory = wishlistService.getHistory(created.id()).getFirst();
+        assertEquals(new BigDecimal("180.00"), purchaseHistory.finalPriceSnapshot());
+        assertTrue(purchaseHistory.description().contains("Cotação: 200.00"));
+        assertTrue(purchaseHistory.description().contains("desconto na compra: 10.00%"));
+        assertTrue(purchaseHistory.description().contains("valor pago: 180.00"));
+    }
+
+    @Test
+    void shouldRejectPurchaseDiscountOutsideValidRange() {
+        authenticateDefaultUser();
+        WishlistListResponseDTO defaultList = wishlistService.findAllLists().getFirst();
+        WishlistResponseDTO created = wishlistService.create(new WishlistRequestDTO(
+                "Livro", new BigDecimal("200.00"), BigDecimal.ZERO, WishlistItem.Priority.MEDIA,
+                WishlistItem.WishlistCategory.EDUCACAO, "", defaultList.id()
+        ));
+
+        assertThrows(IllegalArgumentException.class, () -> wishlistService.markAsPurchased(created.id(),
+                new WishlistPurchaseRequestDTO(LocalDate.now(), WishlistItem.PurchasePaymentMethod.PIX,
+                        1, false, new BigDecimal("100"))));
+        assertThrows(IllegalArgumentException.class, () -> wishlistService.markAsPurchased(created.id(),
+                new WishlistPurchaseRequestDTO(LocalDate.now(), WishlistItem.PurchasePaymentMethod.PIX,
+                        1, false, new BigDecimal("-1"))));
     }
 
     private User authenticateDefaultUser() {

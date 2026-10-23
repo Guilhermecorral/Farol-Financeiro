@@ -15,6 +15,8 @@ public record WishlistResponseDTO(
         BigDecimal originalPrice,
         BigDecimal discountPercent,
         BigDecimal finalPrice,
+        BigDecimal purchaseDiscountPercent,
+        BigDecimal purchaseFinalPrice,
         WishlistItem.Priority priority,
         WishlistItem.WishlistCategory category,
         String notes,

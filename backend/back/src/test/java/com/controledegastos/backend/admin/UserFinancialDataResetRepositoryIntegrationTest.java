@@ -52,9 +52,9 @@ class UserFinancialDataResetRepositoryIntegrationTest {
         jdbcTemplate.update("INSERT INTO wishlist_lists (name, is_default, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", "Lista", true, userId, Timestamp.valueOf(now), Timestamp.valueOf(now));
         Long listId = id("wishlist_lists", "user_id", userId);
         jdbcTemplate.update("""
-                INSERT INTO wishlist_items (description, original_price, discount_percent, final_price, priority, category, status, installments, first_installment_next_month, archived_after_purchase, user_id, wishlist_list_id, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, "Notebook", 1000, 0, 1000, "MEDIA", "COMPRAS", "PENDENTE", 1, false, false, userId, listId, Timestamp.valueOf(now), Timestamp.valueOf(now));
+                INSERT INTO wishlist_items (description, original_price, discount_percent, final_price, purchase_discount_percent, purchase_final_price, priority, category, status, installments, first_installment_next_month, archived_after_purchase, user_id, wishlist_list_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, "Notebook", 1000, 0, 1000, 0, null, "MEDIA", "COMPRAS", "PENDENTE", 1, false, false, userId, listId, Timestamp.valueOf(now), Timestamp.valueOf(now));
         Long itemId = id("wishlist_items", "user_id", userId);
         jdbcTemplate.update("INSERT INTO wishlist_history_entries (wishlist_item_id, user_id, action_type, description, final_price_snapshot, created_at) VALUES (?, ?, ?, ?, ?, ?)", itemId, userId, "CREATED", "Criado", 1000, Timestamp.valueOf(now));
 

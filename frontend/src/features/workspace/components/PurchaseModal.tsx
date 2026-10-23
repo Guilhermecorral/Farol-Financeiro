@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction } from 'react';
 import { PaymentMethod, WishlistHistoryResponse, WishlistItemResponse } from '../../../types';
-import { categoryLabels, formatCurrency, paymentMethodLabels } from '../../../lib/mockFinance';
+import { calculateFinalPrice, categoryLabels, formatCurrency, paymentMethodLabels } from '../../../lib/mockFinance';
 import { EmptyState, Field, InfoStrip, SelectField, Tag } from '../../shared/ui';
 import { historyLabel, historyTone, PurchaseDraft } from '../types';
 
@@ -31,6 +31,10 @@ export default function PurchaseModal({
     return null;
   }
 
+  const purchaseDiscountPercent = Number(draft.purchaseDiscountPercent || 0);
+  const purchaseFinalPrice = calculateFinalPrice(item.finalPrice, purchaseDiscountPercent);
+  const isDiscountValid = Number.isFinite(purchaseDiscountPercent) && purchaseDiscountPercent >= 0 && purchaseDiscountPercent < 100;
+
   return (
     <div className="fixed inset-0 z-40 overflow-y-auto bg-slate-950/45 p-4">
       <div className="mx-auto flex min-h-full items-center justify-center">
@@ -44,11 +48,23 @@ export default function PurchaseModal({
           </p>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <InfoStrip helper="Preço final com desconto aplicado." label="Valor final" value={formatCurrency(item.finalPrice)} />
+            <InfoStrip helper="Última cotação salva na lista." label="Preço cotado" value={formatCurrency(item.finalPrice)} />
+            <InfoStrip helper="Valor que será lançado como despesa." label="Valor pago" value={formatCurrency(purchaseFinalPrice)} />
             <InfoStrip helper="Categoria que entrará no financeiro." label="Categoria" value={categoryLabels[item.category]} />
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <Field label="Desconto na compra (%)">
+              <input
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 outline-none transition focus:border-emerald-400 focus:bg-white"
+                min="0"
+                max="99.99"
+                step="0.01"
+                type="number"
+                value={draft.purchaseDiscountPercent}
+                onChange={(event) => onDraftChange((currentValue) => ({ ...currentValue, purchaseDiscountPercent: event.target.value }))}
+              />
+            </Field>
             <Field label="Data da compra">
               <input
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 outline-none transition focus:border-emerald-400 focus:bg-white"
@@ -118,8 +134,9 @@ export default function PurchaseModal({
 
           <div className="mt-6 flex flex-wrap gap-3">
             <button
-              className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600"
+              className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-300"
               onClick={onSubmit}
+              disabled={!isDiscountValid || purchaseFinalPrice <= 0}
               type="button"
             >
               Confirmar compra

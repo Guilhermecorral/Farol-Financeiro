@@ -321,6 +321,7 @@ export interface WishlistPurchaseRequest {
   paymentMethod: PaymentMethod;
   installments: number;
   firstInstallmentNextMonth: boolean;
+  purchaseDiscountPercent: number;
 }
 
 export interface WishlistItemResponse {
@@ -329,6 +330,8 @@ export interface WishlistItemResponse {
   originalPrice: number;
   discountPercent: number;
   finalPrice: number;
+  purchaseDiscountPercent: number;
+  purchaseFinalPrice: number | null;
   priority: WishlistPriority;
   category: Category;
   notes: string;
